@@ -1,63 +1,66 @@
-# Plant-Harvest
+# Plant-Harvest 🌱🚜
 
-AI-driven smart agriculture system using YOLO to detect plant growth stages, health, and optimal harvest timing.
+AI-driven smart agriculture system using YOLO to detect plant growth stages, plant health, and optimal harvest timing.
 
-This repository contains code, dataset layout and an example Colab training notebook (plant-predict.ipynb) used to train a YOLO model to classify plant stages: `early`, `growth`, `harvest`, and `maturity`.
+This repository contains an example Colab notebook (plant-predict.ipynb), dataset layout, training code and exported model checkpoints for detecting plant stages: `early`, `growth`, `harvest`, and `maturity`.
 
 ---
 
 ## Table of contents
-
 - [Overview](#overview)
-- [Features](#features)
-- [Dataset structure](#dataset-structure)
-- [Quick start (Colab / Local)](#quick-start-colab--local)
-- [Training example](#training-example)
-- [Validation & Results](#validation--results)
-- [Inference example](#inference-example)
-- [Troubleshooting & notes](#troubleshooting--notes)
-- [Tips to improve performance](#tips-to-improve-performance)
-- [Files produced by training](#files-produced-by-training)
-- [License & Contact](#license--contact)
+- [Quick start (Colab / Local) 🧭](#quick-start-colab--local-)
+- [Dataset structure 📁](#dataset-structure-)
+- [Training example ⚙️](#training-example-)
+- [Validation & Results 📈](#validation--results-)
+- [Inference example ▶️](#inference-example-)
+- [Images in repo 🖼️](#images-in-repo-)
+- [Troubleshooting & notes ⚠️](#troubleshooting--notes-)
+- [Tips to improve performance 💡](#tips-to-improve-performance-)
+- [Files produced by training ✅](#files-produced-by-training-)
+- [License & Contact ✉️](#license--contact-)
 
 ---
 
 ## Overview
-
-Plant-Harvest uses Ultralytics YOLO to detect plant growth stages from images. The model helps automate monitoring of plant development and supports decisions such as optimal harvest timing.
-
-The notebook `plant-predict.ipynb` included with the project shows the end-to-end flow used in Colab:
-- mounting Google Drive
-- preparing dataset
-- training YOLO
-- validating and running inference
+Plant-Harvest uses Ultralytics YOLO to classify plant growth stages from images to help automate monitoring and decision-making (e.g., when to harvest). The included Colab notebook demonstrates dataset preparation, training, validation and example inference.
 
 ---
 
-## Features
+## Quick start (Colab / Local) 🧭
 
-- Train YOLO object detection model on labeled images of plants for stage classification
-- Use standard YOLO dataset layout (train/val/test with images and YOLO-format labels)
-- Quick Colab-ready example (uses `ultralytics` package)
-- Example inference code to run predictions and save visualized outputs
+Prerequisites:
+- Python 3.8+ or Google Colab
+- ultralytics (notebook used ultralytics==8.3.10)
+
+Install (local or Colab):
+```bash
+pip install ultralytics==8.3.10
+```
+
+Typical flow (Colab):
+1. Mount Google Drive
+2. Copy/unzip dataset to working folder
+3. Confirm `data.yaml` and label files
+4. Run the training cell in `plant-predict.ipynb`
 
 ---
 
-## Dataset structure
+## Dataset structure 📁
 
-Expected layout (example from the notebook):
-
-/content/data/
-- train/
-  - images/
-  - labels/  (YOLO txt files: class x_center y_center width height, normalized [0,1])
-- valid/
-  - images/
-  - labels/
-- test/
-  - images/
-  - labels/
-- data.yaml
+Expected layout (YOLO-style):
+```
+/data
+  /train
+    /images
+    /labels
+  /valid
+    /images
+    /labels
+  /test
+    /images
+    /labels
+data.yaml
+```
 
 Example `data.yaml` used in the notebook:
 ```yaml
@@ -72,46 +75,17 @@ names:
   3: maturity
 ```
 
-Label format: YOLO format (one line per object)
-`<class_id> <x_center> <y_center> <width> <height>` (all normalized between 0 and 1)
+Label format: YOLO (one object per line)
+`<class_id> <x_center> <y_center> <width> <height>` (all normalized 0.0–1.0).
 
 ---
 
-## Quick start (Colab)
+## Training example ⚙️
 
-Prerequisites:
-- Google Colab or an environment with Python 3.8+ and required packages.
-- ultralytics==8.3.10 was used in the notebook.
-
-Install dependencies (example):
-```bash
-pip install ultralytics==8.3.10
-```
-
-Typical Colab steps shown in the notebook:
-1. Mount Drive
-```python
-from google.colab import drive
-drive.mount('/content/drive')
-```
-2. Copy dataset (example where dataset zip lives in Drive):
-```bash
-cp /content/drive/MyDrive/yolo_dataset/agri.zip /content/
-unzip /content/agri.zip -d /content/data
-```
-3. (Optional) Overwrite or confirm `data.yaml`.
-
----
-
-## Training example
-
-The exact training snippet used in the included notebook:
-
+Snippet from the notebook:
 ```python
 from ultralytics import YOLO
-
-# small/compact starter model (the notebook downloads yolo11n.pt)
-model = YOLO('yolo11n.pt')   # or use a larger backbone (yolo11s, etc.)
+model = YOLO('yolo11n.pt')  # small starter model; use larger if you need accuracy
 
 model.train(
     data='/content/data/data.yaml',
@@ -123,95 +97,82 @@ model.train(
 ```
 
 Notes:
-- The notebook uses `optimizer=auto` (Ultralytics selects optimizer/lr automatically).
-- The training produced `runs/detect/train/weights/best.pt` and `last.pt` by default.
+- Ultralytics may auto-select a good optimizer and learning rate.
+- Training logs and artifacts are saved under `runs/detect/<name>`.
 
 ---
 
-## Validation & Results
+## Validation & Results 📈
 
-After training for 50 epochs the notebook validated the best checkpoint and reported these primary metrics:
+Example summary (from the notebook run):
+- Precision: 0.820
+- Recall: 0.904
+- mAP@50: 0.925
+- mAP@50-95: 0.77
 
-- Overall:
-  - Precision: 0.820
-  - Recall: 0.904
-  - mAP@50: 0.925
-  - mAP@50-95: 0.77
+Per-class highlights (approx):
+- early: mAP ~0.95
+- growth: mAP ~0.93
+- harvest: mAP ~0.98
+- maturity: mAP ~0.84
 
-- Per-class mAP (approx):
-  - early: 0.95
-  - growth: 0.929
-  - harvest: 0.984
-  - maturity: 0.837
-
-These scores came from the run logs saved under `runs/detect/train`.
+(See the `runs/detect/train` folder for detailed logs and metric plots.)
 
 ---
 
-## Inference example
+## Inference example ▶️
 
-To run inference on a single image (example from the notebook):
-
+Run inference on an image (example):
 ```python
-# (after training / or load trained weights)
-model = YOLO('runs/detect/train/weights/best.pt')  # or path to the desired checkpoint
-
-results = model.predict(
-    source='0209m_JPEG.rf.9689b504a63fa87b9d549ec21cde35df.jpg',
-    save=True,
-    imgsz=640
-)
-# Results images are saved under runs/detect/<name>
+model = YOLO('runs/detect/train/weights/best.pt')
+results = model.predict(source='some_image.jpg', save=True, imgsz=640)
 ```
-
-Uploaded examples in Colab were saved to:
-`runs/detect/train3` (the notebook saved prediction outputs there).
+Saved results appear in `runs/detect/<run_name>` and include visualization images.
 
 ---
 
-## Troubleshooting & notes
+## Images in repo 🖼️
 
-- Corrupt labels detected during training:
-  The training log warns about a few images with "non-normalized or out of bounds coordinates". The notebook reported these files:
-  - `/content/data/train/images/0506t_JPEG.rf.25a274b4b0034791e7171d7f08436aae.jpg`
-  - `/content/data/train/images/0809m_JPEG.rf.d4c35101b6c7953d66e2e3a741a0d294.jpg`
-  - `/content/data/train/images/2107t_JPEG.rf.b92de89b7472a4c659482b2133e90a7e.jpg`
+This repository already includes these visual assets:
+- `confusion_matrix.png` — confusion matrix visualization for the model 📊  
+  ![Confusion Matrix](confusion_matrix.png)
 
-  Fix:
-  - Open the corresponding `.txt` label files in `train/labels` and ensure all values are normalized between `0.0` and `1.0`.
-  - Confirm label lines follow YOLO format: `class x_center y_center width height`.
-  - Remove or correct labels where width/height/centers are out of bounds.
+- `growth.jpg` — example image showing a plant in the "growth" stage 🌿  
+  ![Growth example](growth.jpg)
+
+Use the images above to quickly inspect model performance and an example input. If images are located in a subfolder (e.g., `assets/`), adjust the paths accordingly.
+
+---
+
+## Troubleshooting & notes ⚠️
+
+- Out-of-bounds / non-normalized labels:
+  The notebook reported a few label warnings (example files). Fix by opening corresponding `.txt` label files in `train/labels` and ensuring all x/y/width/height values are normalized between 0 and 1.
 
 - `pin_memory` warning:
-  - When running on CPU-only (as in some Colab runtimes), you may see a PyTorch warning about `pin_memory`. It's a benign information message and does not affect training on CPU.
+  Seen when running on CPU-only. It's informational and safe to ignore.
+
+- If training is unstable:
+  - Reduce learning rate, lower batch size or switch to a more powerful backbone.
+  - Ensure dataset is balanced across classes.
 
 ---
 
-## Tips to improve performance
+## Tips to improve performance 💡
 
-- Use a larger YOLO backbone (yolo11s, yolo11m, or official yolov8/yolov5 models) if compute allows.
-- Increase dataset size and class balance across `early`, `growth`, `harvest`, `maturity`.
-- Fix and clean labels; remove out-of-bounds or incorrect annotations.
-- Use stronger augmentation or longer training (monitor overfitting).
-- Consider transfer learning from a model pretrained on a larger dataset or fine-tune backbone layers.
-- Use mixed-precision GPU training (if GPU available) to accelerate and scale batch size.
-
----
-
-## Files produced by training
-
-- runs/detect/train/weights/best.pt — best checkpoint (optimizer stripped)
-- runs/detect/train/weights/last.pt — last checkpoint (optimizer stripped)
-- runs/detect/train/labels.jpg — plotted label distribution
-- runs/detect/train/*.csv, *.json — (depending on options) metrics and logs
+- Increase dataset size and diversity (different lighting, angles, growth stages).
+- Use stronger backbone (yolo11s / bigger models) if compute allows.
+- Carefully clean and balance labels.
+- Apply augmentation and longer training, monitor metrics.
+- Use GPU + mixed precision for larger experiments.
 
 ---
 
-## License & Contact
+## Files produced by training ✅
 
-- License: MIT (choose a license file and adjust here if you prefer a different one)
-- Author / Maintainer: (replace with your name) Sanjana Rathnayake / sanjanarathnyke
+- `runs/detect/<run_name>/weights/best.pt` — best model (optimizer stripped)
+- `runs/detect/<run_name>/weights/last.pt` — last-epoch model
+- `runs/detect/<run_name>/labels.jpg` — plotted label distribution
+- Metric logs & plots inside `runs/detect/<run_name>/`
 
-If you want, I can:
-- create a Git commit that adds this README to your repository (I will need the repository path and permission), or
-- help prepare a PR with further improvements (model card, detailed experiments, or export scripts).
+---
